@@ -14,32 +14,59 @@ options("scipen"=100)
 ```
 # Predicting Stroke
 
-## Load Data
+## Data
+The data from this project can be found [on Kaggle](https://www.kaggle.com/asaumya/healthcare-dataset-stroke-data).  Test data does not contain stroke indicator so train file is split between test and train data sets.
 
+### Load
 ```{r LoadData}
-data.train <- read.csv("train_2v.csv")
+data <- read.csv("train_2v.csv")
 #data.test <- read.csv("test_2v.csv")
-
-logicvars <- c("hypertension", "heart_disease", "stroke")
-
-print("'Other' Gender")
-data.train %>% filter(gender == "Other") %>% nrow()
-print("BMI over 70")
-data.train %>% filter(bmi >= 70) %>% nrow()
-
-data.train <- data.train %>%
-  filter(gender != "Other",
-         bmi < 70) %>%
-  mutate_at(logicvars, as.logical) %>%
-  mutate(age_bucket = cut(age, seq(0, 85, by = 5)))
 ```
-### Cleaning
 
+### Raw Data Statistics
+
+```{r SummaryStatistics; echo = FALSE}
+summary.stats <- function(data){
+    list(rowcount = nrow(data),
+         nstrokes = data %>% filter(stroke == 1) %>% nrow() %>% as.numeric()
+         )
+}
+summary.stats(data)
+```
+
+### Cleaning
 * Gender of "Other" was removed (11 observations)
 * BMI over 70 was removed (17 observations)
-* Ages were bucketed in 5 year increments
+* Ages less than or equal to 1 were removed (530 observations)
 
-## Summary
+```{r CleanData}
+#Define Logical Variables
+logicvars <- c("hypertension", "heart_disease", "stroke")
+
+data.train <- data %>%
+  filter(gender != "Other",
+         bmi < 70,
+         age > 1) %>%
+  mutate_at(logicvars, as.logical)
+
+#Print row counts of removed data
+print("'Other' Gender")
+data %>% filter(gender == "Other") %>% nrow()
+print("BMI over 70")
+data %>% filter(bmi >= 70) %>% nrow()
+print("Age over 1")
+data %>% filter(age <= 1) %>% nrow()
+```
+
+### Feature Engineering
+
+* Bucket ages in 5 year increments
+```{r Features}
+#Add cusom features
+data.train <- data.train %>%
+  mutate(age_bucket = cut(age, seq(0, 85, by = 5)))
+```
+## Exploratory Analysis
 
 ```{r Exploration, echo=FALSE}
 library(gridExtra)
@@ -56,9 +83,8 @@ hist.age <- data.train %>%
   geom_bar()
 
 hist.gluc <- data.train %>%
-  ggplot(mapping = aes(x = avg_glucose_level, fill = gender)) +
-  geom_histogram() +
-  facet_grid(~stroke)
+  ggplot(mapping = aes(x = avg_glucose_level, fill = stroke)) +
+  geom_histogram()
 
 sp.agebmi <- data.train %>%
   ggplot(mapping = aes())
@@ -66,16 +92,25 @@ sp.agebmi <- data.train %>%
 grid.arrange(hist.bmi, hist.gluc, ncol = 2)
 hist.age
 
-tbl.wrktype <- table(data.train$stroke, data.train$work_type)
+tbl.wrktype <-  table(data.train$stroke, data.train$work_type)
 
 print("Stroke vs. Work Type")
 tbl.wrktype
 ```
-BMI is approximately normal around 25, glucose appears to be bimodal around 100 and 200.  Appears to be an uptick in strokes at higher issue age.  
+BMI is approximately normal around 25, glucose appears to be bimodal around 100 and 200.  Appears to be an uptick in strokes at higher ages.  
 
 Several observations do not have smoker status, so this variable should be used with caution in any models.
 
+Self employed individuals have a stroke rate 3 times higher than other working groups.
 
-```{r Exploration}
+## Model
+Three models will be constructed to predict whether an individual will have a stroke.
+
+1. Recursive Tree with Binary Splitting
+2. Logistic Regression
+3. Random forrest
+
+## Model Setup
+```{r ModelSetup}
 
 ```
