@@ -10,22 +10,72 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(rpart)
 library(rpart.plot)
+options("scipen"=100)
 ```
+# Predicting Stroke
 
 ## Load Data
 
 ```{r LoadData}
 data.train <- read.csv("train_2v.csv")
-data.test <- read.csv("test_2v.csv")
+#data.test <- read.csv("test_2v.csv")
 
 logicvars <- c("hypertension", "heart_disease", "stroke")
 
-data.train <- data.train %>% mutate_at(logicvars, as.logical)
+print("'Other' Gender")
+data.train %>% filter(gender == "Other") %>% nrow()
+print("BMI over 70")
+data.train %>% filter(bmi >= 70) %>% nrow()
+
+data.train <- data.train %>%
+  filter(gender != "Other",
+         bmi < 70) %>%
+  mutate_at(logicvars, as.logical) %>%
+  mutate(age_bucket = cut(age, seq(0, 85, by = 5)))
 ```
+### Cleaning
+
+* Gender of "Other" was removed (11 observations)
+* BMI over 70 was removed (17 observations)
+* Ages were bucketed in 5 year increments
 
 ## Summary
 
-```{r visualization, echo=FALSE}
-summary(data.train)
-```
+```{r Exploration, echo=FALSE}
+library(gridExtra)
 
+summary(data.train)
+
+hist.bmi <- data.train %>%
+  ggplot(mapping = aes(x = bmi, fill = stroke)) +
+  geom_histogram() +
+  stat_density()
+
+hist.age <- data.train %>%
+  ggplot(mapping = aes(x = age_bucket, fill = stroke)) +
+  geom_bar()
+
+hist.gluc <- data.train %>%
+  ggplot(mapping = aes(x = avg_glucose_level, fill = gender)) +
+  geom_histogram() +
+  facet_grid(~stroke)
+
+sp.agebmi <- data.train %>%
+  ggplot(mapping = aes())
+
+grid.arrange(hist.bmi, hist.gluc, ncol = 2)
+hist.age
+
+tbl.wrktype <- table(data.train$stroke, data.train$work_type)
+
+print("Stroke vs. Work Type")
+tbl.wrktype
+```
+BMI is approximately normal around 25, glucose appears to be bimodal around 100 and 200.  Appears to be an uptick in strokes at higher issue age.  
+
+Several observations do not have smoker status, so this variable should be used with caution in any models.
+
+
+```{r Exploration}
+
+```
