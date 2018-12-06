@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(rpart)
 library(rpart.plot)
+library(caret)
 options("scipen"=100)
 ```
 # Predicting Stroke
@@ -104,13 +105,44 @@ Several observations do not have smoker status, so this variable should be used 
 Self employed individuals have a stroke rate 3 times higher than other working groups.
 
 ## Model
-Three models will be constructed to predict whether an individual will have a stroke.
+Two models will be created to predict if an individual has a 
 
-1. Recursive Tree with Binary Splitting
-2. Logistic Regression
-3. Random forrest
+1. Logistic Regression
+2. Random forrest
 
-## Model Setup
+### Model Setup
 ```{r ModelSetup}
+set.seed(100)
+model.vars <- c("gender", 
+                "age", 
+                "avg_glucose_level", 
+                "bmi", 
+                "heart_disease", 
+                "ever_married",
+                "hypertension",
+                "work_type")
 
+model.target <- "stroke"
+model.formula <- paste(c(model.target,
+                         paste(model.vars, collapse = " + ")),
+                       collapse = " ~ ") %>% as.formula()
+model.formula
+
+model.splitindices <- createDataPartition(data.train$stroke, p = .8, list = FALSE)
+
+data.t <- data.train[model.splitindices,]
+data.v <- data.train[-model.splitindices,]
+```
+
+### Logistic Regression Model
+```{r TreeModel}
+set.seed(100)
+model.glm <- glm(formula = model.formula,
+                 family = binomial(link = "logit"),
+                 data = data.t)
+
+summary(model.glm)
+
+model.glm.pred <- predict(model.glm, type = "response")
+confusionMatrix(as.factor(model.glm.pred > .5), reference = factor(data.t$stroke))
 ```
