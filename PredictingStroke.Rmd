@@ -1,0 +1,31 @@
+---
+title: "PredictingStroke"
+author: "Jake McAferty"
+date: "December 5, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+```
+
+## Load Data
+
+```{r LoadData}
+data.train <- read.csv("train_2v.csv")
+data.test <- read.csv("test_2v.csv")
+
+logicvars <- c("hypertension", "heart_disease", "stroke")
+
+data.train <- data.train %>% mutate_at(logicvars, as.logical)
+```
+
+## Summary
+
+```{r visualization, echo=FALSE}
+summary(data.train)
+```
+
