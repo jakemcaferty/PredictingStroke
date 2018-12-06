@@ -113,14 +113,11 @@ Two models will be created to predict if an individual has a
 ### Model Setup
 ```{r ModelSetup}
 set.seed(100)
-model.vars <- c("gender", 
-                "age", 
+model.vars <- c("age", 
                 "avg_glucose_level", 
                 "bmi", 
-                "heart_disease", 
-                "ever_married",
-                "hypertension",
-                "work_type")
+                "heart_disease",
+                "hypertension")
 
 model.target <- "stroke"
 model.formula <- paste(c(model.target,
@@ -132,6 +129,19 @@ model.splitindices <- createDataPartition(data.train$stroke, p = .8, list = FALS
 
 data.t <- data.train[model.splitindices,]
 data.v <- data.train[-model.splitindices,]
+
+
+print(nrow(samp.stroke)/nrow(data.t)) #Less than 2% of observations have a stroke
+
+#Undersample training data
+samp.count <- data.t %>% filter(stroke) %>% nrow()*2 #make a third of observations be true
+samp.nostroke <- data.t %>% filter(!stroke)
+samp.stroke <- data.t %>% filter(stroke)
+
+samp.ind <- sample(x = seq(1, nrow(samp.nostroke)), size = samp.count)
+data.t <- rbind(samp.nostroke[samp.ind,], samp.stroke)
+
+print(nrow(samp.stroke)/nrow(data.t))
 ```
 
 ### Logistic Regression Model
@@ -145,4 +155,7 @@ summary(model.glm)
 
 model.glm.pred <- predict(model.glm, type = "response")
 confusionMatrix(as.factor(model.glm.pred > .5), reference = factor(data.t$stroke))
+
+model.glm.predv <- predict(model.glm, newdata = data.v,type = "response")
+confusionMatrix(as.factor(model.glm.predv > .5), reference = factor(data.v$stroke))
 ```
